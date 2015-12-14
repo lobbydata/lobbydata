@@ -5,6 +5,7 @@
 *.out
 *.Rout
 *.RData
+*.pdf
 
 # subfolders
 /code/*.pdf
