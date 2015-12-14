@@ -1,0 +1,23 @@
+*.pyc
+*.synctex.gz
+*.aux
+*.log
+*.out
+*.Rout
+*.RData
+
+# subfolders
+/code/*.pdf
+/code/*.txt
+/code/analyze/*.txt
+/code/analyze/
+
+/data/lda/*
+/data/database/*
+/data/compustat/*.csv
+/data/orbis/*.csv
+
+
+# specific files
+/code/compustat_amount*
+/code/database/documentation

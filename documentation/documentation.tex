@@ -1,0 +1,505 @@
+\documentclass[11pt,letterpaper]{article}
+%% === margins ===
+\addtolength{\hoffset}{-0.75in} \addtolength{\voffset}{-1.25in}
+\addtolength{\textwidth}{1.5in} \addtolength{\textheight}{2.25in}
+
+%% === basic packages ===
+\usepackage{latexsym}
+\usepackage{amssymb,amsmath, bm}
+\usepackage{graphicx}
+\usepackage{marvosym}
+\usepackage{multirow}
+\usepackage{verbatim}
+%\usepackage{arydshln}
+%% === bibliography packages ===
+\usepackage{natbib}
+\bibliographystyle{natbib}
+%% === hyperref options ===
+\usepackage{color}
+\usepackage[pdftex, bookmarksopen=true, bookmarksnumbered=true,
+pdfstartview=FitH, breaklinks=true, urlbordercolor={0 1 0}, citebordercolor={0 0 1}]{hyperref}
+  
+% === dcolumn package ===
+\usepackage{dcolumn}
+\newcolumntype{.}{D{.}{.}{-1}}
+\newcolumntype{d}[1]{D{.}{.}{#1}}
+% === theorem package ===
+\usepackage{theorem}
+\theoremstyle{plain}
+\theoremheaderfont{\scshape}
+\newtheorem{theorem}{Theorem}
+\newtheorem{algorithm}{Algorithm}
+\newtheorem{assumption}{Assumption}
+\newtheorem{lemma}{Lemma}
+\newtheorem{remark}{Remark}
+\newcommand{\qed}{\hfill \ensuremath{\Box}}
+\newcommand{\indep}{\mbox{$\perp\!\!\!\perp$}}
+\DeclareMathOperator{\sgn}{sgn}
+\DeclareMathOperator{\argmin}{arg\min}
+\def\independenT#1#2{\mathrel{\rlap{$#1#2$}\mkern2mu{#1#2}}}
+\providecommand{\norm}[1]{\lVert#1\rVert}
+
+% ==== rotating package ===
+\usepackage{rotating}
+
+% ==== indicator function ===
+\usepackage{bbm}
+
+
+% ==== dotted lines in tables ===
+\usepackage{arydshln}
+
+% ==== for thick lines in tables ===
+\usepackage{booktabs}
+% == spacing between sections and subsections
+\usepackage[compact]{titlesec}
+
+% == anonymous submission
+\newcommand{\blind}{1}
+
+% == times new roman
+%\usepackage{times}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+% === new commands ===
+\newcommand\ud{\mathrm{d}}
+\newcommand\dist{\buildrel\rm d\over\sim}
+\newcommand\ind{\stackrel{\rm indep.}{\sim}}
+\newcommand\iid{\stackrel{\rm i.i.d.}{\sim}}
+\newcommand\logit{{\rm logit}}
+\renewcommand\r{\right}
+\renewcommand\l{\left}
+\newcommand\cY{\mathcal{Y}}
+\newcommand\cZ{\mathcal{Z}}
+\newcommand\E{\mathbb{E}}
+\newcommand\V{\mathbb{V}}
+\newcommand\wY{\widetilde{Y}}
+\newcommand\cE{\mathcal{E}}
+\newcommand\cN{\mathcal{N}}
+\newcommand\cX{\mathcal{X}}
+\newcommand\bA{\mathbf{A}}
+\newcommand\bB{\mathbf{B}}
+\newcommand\bI{\mathbf{I}}
+\newcommand\bt{\mathbf{t}}
+\newcommand\bz{\mathbf{z}}
+\newcommand\bone{\mathbf{1}}
+\newcommand\bzero{\mathbf{0}}
+\newcommand\tomega{\tilde\omega}
+\newcommand{\argmax}{\operatornamewithlimits{argmax}}
+
+\newcommand\spacingset[1]{\renewcommand{\baselinestretch}%
+{#1}\small\normalsize}
+
+\spacingset{1}
+
+\newcommand{\tit}{\bf Congress Lobbying Database:\\ Documentation and Usage}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\if1\blind
+
+
+\author{In Song Kim\thanks{Assistant Professor, Department of
+    Political Science, Massachusetts Institute of Technology,
+    Cambridge MA 02142. Phone: 617--253--3138, Email:
+    \href{mailto:insong@mit.edu}{insong@mit.edu}, URL:
+    \href{http://www.princeton.edu/~insong}{http://www.princeton.edu/$\sim$insong}}}
+
+
+{\title{\tit\thanks{Financial support from the National Science
+      Foundation Doctoral Dissertation Research Improvement Grant
+      SES-1264090 is acknowledged. I thank Tim Kunisky, Feng Zhu for
+      their excellent research assistant.}}
+
+  \date{\today}
+
+\maketitle
+}\fi
+
+\pdfbookmark[1]{Title Page}{Title Page}
+
+\thispagestyle{empty}
+\setcounter{page}{0}
+
+
+% \maketitle
+
+\section{Introduction}
+
+This document concerns the code in the \texttt{/lobbydata/code/database}
+directory of our repository, which sets up and provides access to a
+system of databases (running on \texttt{SQLite} and the
+\texttt{Whoosh} text indexing library) that store relationships
+between bills, their lobbiers, and various other related pieces of
+data.
+
+\subsection{Dependencies}
+
+The table below is a summary of the packages on which the database
+depends, along with a short summary of the functionalities that they
+provide (further information and documentation can be easily found on
+their PyPI (Python Package Index) pages).  The packages are roughly
+grouped by their function (database, parsing, etc).  For the purposes
+of actual deployment, the file that manages these packages is
+\texttt{database/REQUIREMENTS}.
+
+\begin{center}
+\begin{tabular}{lp{12cm}}
+  \bf{Package} & \bf{Description} \\
+  \toprule
+  \texttt{SQLAlchemy} & Basic Python bindings and model representations for SQL-type databases. \\
+  \texttt{Elixir} & Higher-level abstractions for dealing with SQL-type databases, extending the functionality that \texttt{SQLAlchemy} makes available. \\
+  \midrule
+  \texttt{Whoosh} & A library for creating full-text index databases that are searchable with reasonable efficiency (if in the future better efficiency here is needed, there are non-Python packages that can do a better job). SQL is not good, generally speaking, for full-text search, hence the necessity of this for the bill CRS summaries and lobbying report specific issue texts. \\
+  \midrule
+  \texttt{BeautifulSoup} & Convenient library for parsing XML and HTML data into Python objects, although when speed becomes an issue there are faster but less convenient (and more code-verbose) alternatives, such as \texttt{xml.etree} in the core Python library. \\
+  \texttt{nltk} & The ``natural language toolkit'' for Python, providing tools for tokenizing and statistically analyzing English-language texts. \\
+  \midrule
+  \texttt{path.py} & Convenience tools to make dealing with the filesystem easier from Python. \\
+  \texttt{python-dateutil} & Convenience tools for dealing with datetimes and time ranges. \\
+    % \bottomrule
+\end{tabular}
+
+\end{center}
+
+Before going any further, you will need to install all of these
+packages, which can be conveniently done through the
+\texttt{REQUIREMENTS} file, by running the following command in the
+shell (you will need the \texttt{pip} utility for Python package
+management):
+\begin{verbatim}
+    > pip install -r REQUIREMENTS
+\end{verbatim}
+
+Also, there are a few subpackages to install for the \texttt{nltk}
+package.  In a Python interpreter, run the following:
+\begin{verbatim}
+    >>> import nltk
+    >>> nltk.download()
+\end{verbatim}
+That will open up an interface for downloading extras/packages for
+\texttt{nltk}. Then, you should go into the Corpora tab and install
+the packages \texttt{stopwords} and \texttt{wordnet}.  If no errors
+arise during this installation procedure, it is safe to proceed to the
+next steps.
+
+\section{Getting Started}
+
+\subsection{Configuration}
+
+All of the necessary configuration for the database system can be done by modifying the variables in \texttt{general.py}.
+The variables are listed below along with the effect that they have on the database creation process.
+Realistically speaking, to get things working locally you should just change \texttt{DATA\_DIR} to something that is not Della-specific.
+Everything else should be (more or less) good to go, assuming no large repository reorganizations have happened.
+
+\begin{center}
+\begin{tabular}{lp{10cm}}
+    \bf{Variable} & \bf{Description} \\
+    \toprule
+    \texttt{TEST\_MODE} & Intended as a testing mode for bill detection and related algorithms, but this is not yet complete, so avoid setting this to \texttt{True} before taking a look at the testing code. \\
+    \texttt{CONGRESSES} & The range of congresses that all processes will be concerned with (note that in Python, the \texttt{range(x, y)} syntax gives the numbers $x, x+1, \dots, y-1$, not including $y$). \\ 
+    \midrule
+    \texttt{OUTPUT\_DIR} & The directory for generic outputs of analytics scripts. \\
+    \texttt{ROOT\_DIR} & The \texttt{database} directory (these directories are given relative to the \texttt{trade/code} directory). \\
+    \texttt{DATA\_DIR} & The directory used for storing databases, which can be totally separate from the code directories. For instance, on Della it is useful to put this under \texttt{/tigress} since it requires lots of storage space. \\
+    \texttt{LOBBY\_REPO\_DIR} & The location of the \texttt{lobby} repository (parallel to the \texttt{trade} repository in the current setup). \\
+    \texttt{CLIENT\_NAME\_MATCHES\_FILE} & The file containing the client name filtering matches (i.e. the output of Josh's script). \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Initialization}
+
+Installing the databases is (or should be) very easy, just go to the
+\texttt{trade/code} directory and run the command \texttt{sudo python
+  -m database.setup}.  This will probably take a very long time to run
+from scratch---possibly up to several days.
+
+\section{Working with the Database}
+
+\subsection{Starting and Ending Sessions}
+
+In order to get started with a database session, navigate to the
+\texttt{trade/code} directory, and run the following sequence of
+commands in the Python interpreter:
+\begin{verbatim}
+    >>> import database.general
+    >>> from database.bills.models import *
+    >>> from database.lda.models import *
+    >>> from database.firms.models import *
+    >>> database.general.init_db()
+\end{verbatim}
+When finished, the following command will safely close the database
+without accidentally permanently writing any changes that may have
+been made to the data:
+\begin{verbatim}
+    >>> database.general.close_db(write=False)
+\end{verbatim}
+If you are in fact correcting errors in the database or otherwise
+performing operations that cause changes that you would like
+permanently registered, then just change the above to instead pass the
+argument \texttt{write=True}.
+
+\subsection{Basic Database Objects and Relationships}
+
+To see what objects are stored in the various databases, look at the
+\texttt{models.py} files in the directories \texttt{bills},
+\texttt{lda}, and \texttt{firms} (the imports described above are what
+give you access to all of these classes).  Each class has some fields,
+where are available to access on any object of the class.  The system
+is best clarified with an example: consider the case of bill objects,
+which are represented by the \texttt{Bill} class.  This class, like
+any other, has an \texttt{id} field that is its \emph{primary key},
+i.e. the value of this field uniquely identifies a \texttt{Bill}
+object.  For bills, the \texttt{id} is a string of the form
+\texttt{110\_HR7311}, where \texttt{110} is the number of the congress
+to which this bill belongs, and \texttt{HR7311} is the bill number.
+To retrieve a particular bill by its \texttt{id}, use the following
+snippet:
+\begin{verbatim}
+    >>> b = Bill.query.get('110_HR7311')
+\end{verbatim}
+Once this command completes, the object \texttt{b} will have all of
+the fields listed under \texttt{Bill} in the file
+\texttt{bills/models.py}.  So, for instance, we can get the date that
+the bill was introduced with \texttt{b.introduced}, get its CRS
+summary text with \texttt{b.summary}, and so forth.  Any field inside
+\texttt{Bill} that is initialized as \texttt{Field(ABC)} where
+\texttt{ABC} is some text (example possible values are
+\texttt{Integer} for integer fields, \texttt{Unicode(L)} for a string
+field of maximum length \texttt{L}, or \texttt{DateTime} for a
+date/time field) is accessed in this straightforward way.
+
+Other fields are registered as \texttt{ManyToMany(ABC)},
+\texttt{ManyToOne(ABC)}, or \texttt{OneToMany(ABC)}, where
+\texttt{ABC} is now the name of some other model.  These fields
+contain references to one or more instances of some other model.  For
+instance, in \texttt{Bill}, the field definition
+\begin{verbatim}
+    titles = OneToMany('BillTitle')
+\end{verbatim}
+indicates that each bill has one or more (hence \texttt{Many})
+associated objects of class \texttt{BillTitle}, which are its titles.
+In \texttt{BillTitle}, we see the field giving the reverse relation,
+\begin{verbatim}
+    bill = ManyToOne('Bill')
+\end{verbatim}
+which indicates that many \texttt{BillTitle} objects can share the
+same \texttt{Bill} object (for some intuition, think of a
+\texttt{OneToMany} field as a ``my children'' relation, and of a
+\texttt{ManyToOne} field as a ``my parent'' relation).
+
+Thus, if \texttt{b} is a \texttt{Bill} object, then \texttt{b.titles}
+will give an iterable (effectively a Python list, for all basic
+purposes) containing all the titles of \texttt{b}.  Conversely, if
+\texttt{t} is a \texttt{BillTitle} object, then \texttt{t.bill} is the
+\texttt{Bill} object to which the title belongs.
+
+The last possibility of these more complex relationships is a
+\texttt{ManyToMany} field, which as its name suggests creates a
+generic relation between two object types (where neither object plays
+the ``child'' or ``parent'' role).  For example, we see in
+\texttt{Bill},
+\begin{verbatim}
+    terms = ManyToMany('Term')
+\end{verbatim}
+and in \texttt{Term},
+\begin{verbatim}
+    bills = ManyToMany('Bill')
+\end{verbatim}
+which means that for a bill \texttt{b}, looking at \texttt{b.terms} gives all of the terms that that bill is classified under, and for a term \texttt{t}, looking at \texttt{t.bills} gives all bills under that term.
+
+\bigskip
+\subsection{Filtering Operations}
+
+The more sophisticated and interesting sorts of queries that are
+possible are those that involve not just fetching particular bills or
+other objects and examining their relationships, but also involve
+filtering sets of objects by useful criteria.  
+
+
+\bigskip
+
+\noindent {\bf Example: filter by columns of each Model}
+\begin{verbatim}
+>>> reports = LobbyingReport.query.\
+                  filter_by(year=2011)
+\end{verbatim}
+returns all lobbying reports filed in 2011
+
+\bigskip
+\noindent {\bf Example: filter by membership in at least one
+  ManyToMany related table}
+\begin{verbatim}
+>>> trade = LobbyingReport.query.\
+                filter(LobbyingReport.issues.any(LobbyingIssue.code.\
+                in_(['TRADE (DOMESTIC/FOREIGN)'])))
+>>> trade.count()
+52418
+\end{verbatim}
+returns all lobbying reports that at least has 'TRADE
+(DOMESTIC/FOREIGN)' as one of issues lobbied.
+
+\subsection{Full-Text Indices}
+
+Two types of data items are duplicated in a separate full-text index
+database to facilitate more efficient searching: the CRS summary text
+of each bill, and the text of each lobbying report specific issue.
+The code concerning the creation and access of these indices is found
+in the files \texttt{bills/ix\_utils.py} and
+\texttt{lda/ix\_utils.py}, respectively.
+
+The primary useful methods, in turn, for accessing these indices are
+\texttt{summary\_search} and \texttt{issue\_search}, in the above two
+files respectively.  These both take one required argument, called
+\texttt{queries\_list}, which is a list of the queries (as strings) to
+make to the full-text index.  They also have two optional boolean
+arguments, \texttt{return\_objects} and \texttt{make\_phrase}, which
+default to \texttt{False}.  Setting \texttt{return\_objects} to
+\texttt{True} will return a collection of \texttt{Bill} or
+\texttt{LobbyingSpecificIssue} Python objects rather than just their
+\texttt{id} values.  Setting \texttt{make\_phrase} to \texttt{True}
+will make each query into a phrase that is searched for a single unit,
+rather than separately searching for each word (as in the difference
+when searching Google for \emph{red cat running} versus \emph{``red
+  cat running''} in quotes).
+
+In \texttt{lda/ix\_utils.py}, there is an additional method exposed for using the index that is called \texttt{get\_bill\_specific\_issues\_by\_titles}, which is a simple special case of \texttt{issue\_search} that searches for all of the titles of a particular bill in the specific issues, used in the database construction process to find the bills mentioned by title in specific issues.
+
+A simple example of using these indices to find bills pertaining to a
+particular textually-distinguished subject (trade-related bills in our
+case) can be found in \texttt{analytics/lobbied\_bills\_data.py}.  We
+define a list of queries on our bills in the following way:
+\begin{verbatim}
+from database.analytics.bill_utils import *
+    bill_queries = [
+        u'trade barrier',
+        u'tariff barrier',
+        ...
+        u'uruguay round',
+        u'harmonized tariff schedule'
+    ]
+\end{verbatim}
+Then, to get the \texttt{id}'s of the bills that contain one of these
+phrases, we do this:
+\begin{verbatim}
+    query_bill_ids = database.bills.ix_utils.summary_search(
+        bill_queries,
+        make_phrase=True,
+        return_objects=False
+    )
+\end{verbatim}
+This returns a list of \texttt{id}'s as strings.  If we wanted the
+corresponding \texttt{Bill} objects instead, we could instead pass the
+argument \texttt{return\_objects=True}.  Note that here it is
+important that we use \texttt{make\_phrase=True}, since otherwise the
+query \texttt{'uruguay round'} would match all bills that contain both
+the word \texttt{uruguay} and the word \texttt{round}, not necessarily
+together, which is not what we want.
+
+A simple example of using these indices to find lobbying reports that
+contain a particular phrase,
+\begin{verbatim}
+from database.analytics.lda_utils import *
+reports =  lda_issue_search(
+    ['Free trade agreements with South Korea']
+)
+\end{verbatim}
+
+\subsection{Calculating Herfindahl Indices for Industry Clients Belong
+to}
+
+We provide a tool to measure the size of each firm in relation to the
+industry. Herfindahl index measures the levels of competition among
+firms (clients) within the same industry. 
+
+\bigskip
+\subsubsection{herfindahl.py (in lobby/code/hfcc)}
+
+Given lobbying database containing firm, LDA, and bill information,
+
+\begin{enumerate}
+\item Pulls firm-level financial and LDA report information from
+  lobbying database
+\item Computes Herfindahl indices
+\item Outputs rows with firm information (sorted by industry as
+  identified by NAICS2), industry Herfindahl index, and lobbying
+  information for firm.
+
+\end{enumerate}
+
+To run: From lobby/code, type "python -m hfcc.herfindahl" No
+additional parameters needed.
+
+\bigskip
+\subsubsection{herfindadd.py (in lobby/code/hfcc)}
+
+Given output (csv) files generated by herfindahl.py,
+
+\begin{enumerate}
+\item Adds indicator showing whether firm lobbied on at least one trade issue
+\item Adds firm-level compustat financial data
+\item Generates (in addition) new csv files with industry-level information in rows
+\end{enumerate}
+
+To run: Ensure output files from herfindahl.py are in lobby/code From
+lobby/code, type ``python -m hfcc.herfindadd'' On-screen documentation
+will detail additional parameters that are needed.
+
+\bigskip
+\noindent {\bf Example}
+\begin{verbatim}
+python -m hfcc.herfindadd namerica naics -s 1996 -e 2011
+\end{verbatim}
+runs the script for the North America files, using NAICS (rather than
+SIC), starting from 1996 and ending in 2011 (herfindahl.py generates
+one file per year per classification system (NAICS / SIC).)
+
+
+
+\section{Collected Implementation Details}
+
+\subsection{Identifying Congress From Bill Number}
+
+This section concerns the procedure by which, given a bill number
+found in a specific issue text, we attempt to identify the most likely
+congress to which that bill would belong.  The relevant code is in
+\texttt{lda/db\_utils.py}, particularly in the method
+\texttt{find\_top\_match\_bill}.  This method takes an argument
+\texttt{bill\_number} that is the number of the bill in question, an
+argument \texttt{context} that is the section of the specific issue
+text in which this bill number was found (or more generally any text
+against which we might want to test bill similarity), an argument
+\texttt{start\_congress} that contains the latest congress that we
+believe this bill could belong to, and lastly an argument \texttt{n}
+that indicates how many congresses to consider (defaulting to three).
+
+Then, the candidate congresses are the \texttt{n} congresses preceding
+\texttt{start\_congress} (and including \texttt{start\_congress}
+itself).  We then look for bills having number \texttt{bill\_number}
+in each of these congresses, and obtain their texts.  Our operating
+hypothesis is that the bill text that is most statistically similar to
+the context (i.e. the specific issue text) will be the bill that we
+are interested in, since presumably the context mentioning the bill
+would be similar to the bill text itself.
+
+The actual similarity computation is performed by the method
+\texttt{find\_top\_match\_index}, which only takes in the list of bill
+texts and the context text, and returns the index in the list of bill
+texts of the text having the greatest similarity to the context.  This
+method uses a vectorizer on the texts to convert strings to frequency
+vectors of words (there is a sequence of tokenizing operations
+involved, which clean the text, remove stopwords, and so forth), and
+then computes the maximum cosine similarity between a bill-text vector
+and the context vector.  That is, if the frequency vectors of the bill
+texts are $b_i$ for $1 \leq i \leq N$, and $c$ is the frequency vector
+of the context, then the method will return the value
+\[ i = \argmax_{1 \leq i \leq N}\frac{b_i \cdot c}{\|b_i\|\|c\|} = \argmax_{1 \leq i \leq N}\frac{b_i \cdot c}{\|b_i\|} \]
+where $\cdot$ is the dot product and $\|\bullet \|$ is the $L^2$-norm, both defined over frequency vectors (we build the total vocabulary of all words occuring in any of the $b_i$ and $c$ and make the frequency vectors over this vocabulary, so that the dimensions of all of these vectors are the same).
+
+
+
+\end{document}
